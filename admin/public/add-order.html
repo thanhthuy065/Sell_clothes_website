@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Thêm nhiều đơn hàng | Trang quản trị</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      margin-left: 200px;
+      margin-right: 200px;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-weight: 600;
+    }
+    .order-form {
+      border: 2px solid #dee2e6;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 25px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .btn-add, .btn-save {
+      font-size: 18px;
+      font-weight: 500;
+    }
+    .remove-btn {
+      float: right;
+      font-size: 18px;
+      color: #dc3545;
+      cursor: pointer;
+    }
+    .remove-btn:hover {
+      color: #b21f2d;
+    }
+    .product-item {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+    .product-item input {
+      width: 25%;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧾 Thêm nhiều đơn hàng</h1>
+
+  <form id="multiOrderForm">
+    <div id="orderFormsContainer"></div>
+
+    <div class="text-center mt-4">
+      <button type="button" id="addOrderBtn" class="btn btn-outline-primary btn-add">➕ Thêm đơn hàng</button>
+      <button type="submit" class="btn btn-success btn-save ms-3">💾 Lưu tất cả</button>
+      <a href="admin.html#ordersTab" class="btn btn-secondary ms-3">⬅ Quay lại</a>
+    </div>
+  </form>
+
+<script>
+  const API_URL = 'http://localhost:3000/api/orders';
+  const container = document.getElementById('orderFormsContainer');
+  const addBtn = document.getElementById('addOrderBtn');
+
+  // ✅ Hàm tạo form đơn hàng
+  function createOrderForm(index) {
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('order-form');
+    wrapper.innerHTML = `
+      <span class="remove-btn" onclick="this.closest('.order-form').remove()">✖</span>
+      <h5 class="mb-3">Đơn hàng ${index + 1}</h5>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">🧍‍♂️ User ID</label>
+        <input type="number" name="user_id_${index}" class="form-control" required placeholder="Nhập ID người dùng...">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">💰 Tổng tiền (VNĐ)</label>
+        <input type="number" name="total_amount_${index}" class="form-control" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">📅 Ngày đặt hàng</label>
+        <input type="date" name="order_date_${index}" class="form-control" value="${new Date().toISOString().split('T')[0]}">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold d-block">🚚 Trạng thái</label>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="status_${index}" value="1" checked>
+          <label class="form-check-label">Đang xử lý</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="status_${index}" value="2">
+          <label class="form-check-label">Đang giao</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="status_${index}" value="3">
+          <label class="form-check-label">Đã giao</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="status_${index}" value="4">
+          <label class="form-check-label">Đã hủy</label>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">📦 Sản phẩm trong đơn hàng</label>
+        <div id="productsContainer_${index}" class="mb-2"></div>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addProduct(${index})">➕ Thêm sản phẩm</button>
+      </div>
+    `;
+    container.appendChild(wrapper);
+  }
+
+  // ✅ Hàm thêm sản phẩm con trong đơn hàng
+  function addProduct(orderIndex) {
+    const container = document.getElementById(`productsContainer_${orderIndex}`);
+    const itemIndex = container.querySelectorAll('.product-item').length;
+    const div = document.createElement('div');
+    div.classList.add('product-item');
+    div.innerHTML = `
+      <input type="number" name="product_id_${orderIndex}_${itemIndex}" class="form-control" placeholder="Product ID" required>
+      <input type="number" name="quantity_${orderIndex}_${itemIndex}" class="form-control" placeholder="Số lượng" required>
+      <input type="number" name="unit_price_${orderIndex}_${itemIndex}" class="form-control" placeholder="Giá bán" required>
+      <select name="pay_method_${orderIndex}_${itemIndex}" class="form-select">
+        <option value="0">Tiền mặt</option>
+        <option value="1">Ngân hàng</option>
+      </select>
+      <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">✖</button>
+    `;
+    container.appendChild(div);
+  }
+
+  // ✅ Form đầu tiên mặc định
+  createOrderForm(0);
+
+  // ➕ Thêm form mới
+  addBtn.addEventListener('click', () => {
+    const index = document.querySelectorAll('.order-form').length;
+    createOrderForm(index);
+  });
+
+  // ⚙️ Khóa/mở nút khi lưu
+  function setSaving(isSaving) {
+    document.querySelector('.btn-save').disabled = isSaving;
+    addBtn.disabled = isSaving;
+  }
+
+  // 💾 Gửi tuần tự từng đơn hàng
+  document.getElementById('multiOrderForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const orders = document.querySelectorAll('.order-form');
+    if (orders.length === 0) {
+      alert('❌ Chưa có đơn hàng nào để lưu.');
+      return;
+    }
+
+    setSaving(true);
+    let success = 0;
+    const messages = [];
+
+    for (let i = 0; i < orders.length; i++) {
+      const orderForm = orders[i];
+      const user_id = orderForm.querySelector(`[name^="user_id_"]`).value;
+      const total_amount = orderForm.querySelector(`[name^="total_amount_"]`).value;
+      const order_date = orderForm.querySelector(`[name^="order_date_"]`).value;
+      const status = parseInt(orderForm.querySelector(`[name^="status_"]:checked`).value);
+
+      const productItems = orderForm.querySelectorAll('.product-item');
+      const items = Array.from(productItems).map(p => ({
+        product_id: parseInt(p.querySelector(`[name^="product_id_"]`).value),
+        quantity: parseInt(p.querySelector(`[name^="quantity_"]`).value),
+        price_promotion: parseFloat(p.querySelector(`[name^="unit_price_"]`).value),
+        pay_method: parseInt(p.querySelector(`[name^="pay_method_"]`).value)
+      }));
+
+      if (!user_id || !total_amount) {
+        messages.push(`Đơn hàng ${i + 1}: ❌ Thiếu thông tin bắt buộc.`);
+        continue;
+      }
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            total: total_amount,
+            status,
+            order_date,
+            items
+          })
+        });
+
+        const result = await res.json();
+        if (res.ok) {
+          success++;
+          messages.push(`Đơn hàng ${i + 1}: ✅ Thêm thành công.`);
+        } else {
+          messages.push(`Đơn hàng ${i + 1}: ❌ ${result.message || 'Lỗi không xác định'}`);
+        }
+      } catch (err) {
+        messages.push(`Đơn hàng ${i + 1}: ⚠️ Lỗi mạng - ${err.message}`);
+      }
+    }
+
+    setSaving(false);
+    alert(messages.join('\n') + `\n\nKết quả: ${success}/${orders.length} đơn hàng thành công.`);
+    if (success > 0) window.location.href = 'admin.html#ordersTab';
+  });
+</script>
+
+</body>
+</html>
